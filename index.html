@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Who Speaks Like a Conservative</title>
+
+<!-- Link preview. Absolute URLs point at https://johnholbein.github.io/apostle-scale; built by Code/109_pages_bundle.R. The card itself is Code/105_social_card.R. -->
+<meta name="description" content="The fifteen apostles of The Church of Jesus Christ of Latter-day Saints, on one left-right scale. Place them yourself, then see what a classifier trained on partisan political text says.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Who speaks more like a conservative?">
+<meta property="og:description" content="The First Presidency and Quorum of the Twelve Apostles of The Church of Jesus Christ of Latter-day Saints, on one left-right scale. Place all fifteen yourself — then see what the words say.">
+<meta property="og:image" content="https://johnholbein.github.io/apostle-scale/social_card.png">
+<meta property="og:image:width" content="2400">
+<meta property="og:image:height" content="1256">
+<meta property="og:image:alt" content="Portraits of the fifteen LDS apostles above an empty left-right scale, under the question: who speaks more like a conservative?">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Who speaks more like a conservative?">
+<meta name="twitter:description" content="The First Presidency and Quorum of the Twelve Apostles of The Church of Jesus Christ of Latter-day Saints, on one left-right scale. Place all fifteen yourself — then see what the words say.">
+<meta name="twitter:image" content="https://johnholbein.github.io/apostle-scale/social_card.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Source+Sans+3:ital,wght@0,400;0,600;0,700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#FAF8F5; --surface:#FFFFFF; --sunk:#F2EFEB;
+  --ink:#1B1A21; --muted:#6E6A78; --faint:#9A96A4;
+  --rule:#DFDAD3; --rule-strong:#C4BDB4;
+  --accent:#5B4A7A; --accent-soft:#EEE9F3;
+  --fp:#E57200;            /* First Presidency  (UVA orange) */
+  --q12:#232D4B;           /* Quorum of the Twelve (UVA navy) */
+  --dem:#2C6FAF; --rep:#B2182B;
+  --shadow:0 1px 2px rgba(27,26,33,.06), 0 6px 20px rgba(27,26,33,.08);
+  --serif:"Newsreader",Georgia,"Times New Roman",serif;
+  --sans:"Source Sans 3",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#141319; --surface:#1E1C26; --sunk:#232130;
+    --ink:#EDEBF2; --muted:#A5A0B2; --faint:#767287;
+    --rule:#302D3C; --rule-strong:#463F57;
+    --accent:#A996CE; --accent-soft:#272336;
+    --fp:#F59331; --q12:#8FA4D4;
+    --dem:#6FA3D6; --rep:#D96C6C;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#141319; --surface:#1E1C26; --sunk:#232130;
+  --ink:#EDEBF2; --muted:#A5A0B2; --faint:#767287;
+  --rule:#302D3C; --rule-strong:#463F57;
+  --accent:#A996CE; --accent-soft:#272336;
+  --fp:#F59331; --q12:#8FA4D4;
+  --dem:#6FA3D6; --rep:#D96C6C;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper); color:var(--ink); font-family:var(--sans);
+  font-size:17px; line-height:1.6; -webkit-font-smoothing:antialiased; overflow-x:hidden}
+.wrap{max-width:1180px; margin:0 auto; padding:0 16px 96px}
+.col{max-width:680px; margin:0 auto}
+
+#rail{position:fixed; top:0; left:0; right:0; height:3px; z-index:60}
+#railfill{height:100%; width:0; background:var(--accent); transition:width .5s cubic-bezier(.4,0,.2,1)}
+
+h1{font-family:var(--serif); font-weight:500; font-size:clamp(2.1rem,6vw,3.25rem);
+   line-height:1.08; letter-spacing:-.015em; margin:0 0 .5rem; text-wrap:balance}
+h2{font-family:var(--serif); font-weight:500; font-size:clamp(1.4rem,3.4vw,1.9rem);
+   line-height:1.2; margin:0 0 .6rem; text-wrap:balance}
+h3{font-family:var(--sans); font-weight:600; font-size:.78rem; letter-spacing:.11em;
+   text-transform:uppercase; color:var(--muted); margin:0 0 .7rem}
+p{margin:0 0 1.05rem}
+.lede{font-size:1.15rem; color:var(--muted)}
+.fine{font-size:.93rem; color:var(--muted)}
+.mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
+.eyebrow{font-family:var(--mono); font-size:.72rem; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--faint); margin:0 0 1.1rem}
+
+.panel{display:none; padding-top:64px}
+.panel.on{display:block; animation:rise .45s cubic-bezier(.2,.7,.3,1)}
+@keyframes rise{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
+@media (prefers-reduced-motion:reduce){ .panel.on{animation:none} *{transition-duration:.01ms !important} }
+
+.btn{font-family:var(--sans); font-size:1rem; font-weight:600;
+  background:var(--ink); color:var(--paper); border:1px solid var(--ink);
+  border-radius:2px; padding:.7em 1.5em; cursor:pointer; transition:transform .12s ease, opacity .12s ease}
+.btn:hover{transform:translateY(-1px)}
+.btn:disabled{opacity:.3; cursor:not-allowed; transform:none}
+.btn.outline{background:transparent; color:var(--ink); border-color:var(--rule-strong); font-weight:400}
+.btn.outline:hover{border-color:var(--ink)}
+.btn.small{font-size:.87rem; padding:.5em 1.05em}
+:focus-visible{outline:2px solid var(--accent); outline-offset:3px}
+.row{display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-top:1.6rem}
+
+.q{margin:0 0 2rem; padding:0 0 1.7rem; border-bottom:1px solid var(--rule)}
+.q:last-of-type{border-bottom:0}
+.qtext{font-family:var(--serif); font-size:1.22rem; line-height:1.35; margin:0 0 .9rem}
+.opts{display:flex; flex-wrap:wrap; gap:8px}
+.opt{font-family:var(--sans); font-size:.95rem; background:var(--surface); color:var(--ink);
+  border:1px solid var(--rule); border-radius:999px; padding:.45em 1.05em; cursor:pointer;
+  transition:background .14s ease, border-color .14s ease, color .14s ease}
+.opt:hover{border-color:var(--rule-strong)}
+.opt[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:#fff}
+:root[data-theme="dark"] .opt[aria-pressed="true"]{color:#15141A}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .opt[aria-pressed="true"]{color:#15141A} }
+.scale7{display:grid; grid-template-columns:repeat(7,1fr); gap:5px; max-width:580px}
+.scale7 .opt{border-radius:2px; padding:.5em .2em; text-align:center; font-size:.8rem; line-height:1.15}
+
+/* ---------------------------------------------------------------- the stage */
+.scroller{overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch}
+#stagebox{position:relative; margin-top:22px}
+#stage{position:relative; touch-action:none}
+#lines{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible}
+#stage.hot{background:var(--accent-soft); border-radius:6px}
+.stagehint{position:absolute; left:0; right:0; top:34%; text-align:center;
+  color:var(--faint); font-size:.95rem; pointer-events:none; padding:0 20px}
+
+.port{position:absolute; width:60px; cursor:grab; user-select:none; touch-action:none;
+  text-align:center; transition:left .85s cubic-bezier(.3,.8,.25,1), top .85s cubic-bezier(.3,.8,.25,1)}
+.port:active{cursor:grabbing}
+.port img{width:60px; height:60px; border-radius:50%; display:block;
+  background:var(--sunk); box-shadow:var(--shadow); border:2px solid var(--surface)}
+.port.fp img{border-color:var(--fp)}
+.port.q12 img{border-color:var(--q12)}
+.port.dragging{transition:none; opacity:.25}
+.port .pname{font-size:9.5px; font-weight:700; line-height:1.15; margin-top:6px; letter-spacing:.005em}
+.port .pnum{font-family:var(--mono); font-size:8.5px; color:var(--muted); line-height:1.25; margin-top:2px}
+.port .pname,.port .pnum{opacity:0; transition:opacity .4s ease .5s}
+#stage.revealed .pname,#stage.revealed .pnum{opacity:1}
+.dragport{position:fixed; z-index:99; pointer-events:none; transform:translate(-50%,-50%) scale(1.06); width:60px}
+.dragport img{width:60px; height:60px; border-radius:50%; display:block; border:2px solid var(--surface); box-shadow:var(--shadow)}
+.port:focus-visible img{outline:3px solid var(--accent); outline-offset:2px}
+
+#tray{display:flex; flex-wrap:wrap; gap:10px 14px; margin-top:20px; justify-content:center}
+#tray .port{position:static; transition:none}
+#tray .port .pname{opacity:1; color:var(--muted); font-weight:600}
+
+figure.hero{margin:0 0 2.2rem; max-width:1180px}
+figure.hero img{display:block; width:100%; height:clamp(150px,22vw,260px);
+  object-fit:cover; object-position:center 42%; border-radius:4px; background:var(--sunk)}
+figure.hero figcaption{font-size:.82rem; color:var(--faint); margin-top:9px; line-height:1.45}
+figure.hero figcaption b{color:var(--muted); font-weight:400}
+.credits{margin-top:2.6rem; padding-top:1.4rem; border-top:1px solid var(--rule);
+  font-size:.78rem; color:var(--faint); line-height:1.6}
+.credits h3{margin-bottom:.5rem}
+.credits a{color:var(--faint); text-decoration:underline; text-underline-offset:2px}
+.yardstick{background:var(--surface); border:1px solid var(--rule); border-radius:4px;
+  padding:22px 24px 18px; margin:1.6rem 0 0; box-shadow:var(--shadow)}
+.yardstick p{margin:0 0 .9rem; font-size:.95rem}
+.yardstick p:last-child{margin-bottom:0}
+.ylist{list-style:none; margin:0 0 1rem; padding:0; display:flex; flex-direction:column; gap:10px}
+.ylist li{display:flex; align-items:baseline; gap:11px; font-size:.95rem; line-height:1.45}
+.ydash{flex:none; width:26px; height:0; border-top:2px dashed currentColor; transform:translateY(-4px)}
+.ydash.dem{color:var(--dem)} .ydash.rep{color:var(--rep)}
+.counter{font-family:var(--mono); font-size:.8rem; color:var(--muted); margin-top:18px; text-align:center}
+.counter b{color:var(--ink); font-weight:500}
+
+.legend{display:flex; gap:20px; flex-wrap:wrap; margin-top:18px; font-size:.85rem; color:var(--muted); justify-content:center}
+.legend span{display:flex; align-items:center; gap:7px}
+.sw{width:13px; height:13px; border-radius:50%; display:inline-block; flex:none}
+.swline{width:18px; height:0; border-top:2px dashed currentColor; display:inline-block; flex:none}
+
+.score{background:var(--surface); border:1px solid var(--rule); border-radius:4px;
+  padding:26px 26px 22px; margin:2.2rem 0 0; box-shadow:var(--shadow)}
+.bignum{font-family:var(--serif); font-size:clamp(3rem,10vw,4.6rem); line-height:.95;
+  font-variant-numeric:tabular-nums; letter-spacing:-.02em; margin:0}
+.statgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:20px;
+  margin-top:22px; padding-top:20px; border-top:1px solid var(--rule)}
+.stat .k{font-family:var(--mono); font-size:.68rem; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--faint); margin-bottom:5px}
+.stat .v{font-family:var(--serif); font-size:1.5rem; font-variant-numeric:tabular-nums}
+.stat .n{font-size:.83rem; color:var(--muted); line-height:1.35}
+
+.note{border-left:2px solid var(--rule-strong); padding:2px 0 2px 18px; margin:2rem 0;
+  font-size:.95rem; color:var(--muted)}
+.note strong{color:var(--ink)}
+.saved{font-family:var(--mono); font-size:.72rem; color:var(--faint); margin-top:28px}
+.credit{font-size:.78rem; color:var(--faint); margin-top:14px; text-align:center}
+hr.sep{border:0; border-top:1px solid var(--rule); margin:3rem 0}
+
+@media (max-width:700px){
+  body{font-size:16px}
+  .port,.port img,.dragport,.dragport img{width:46px}
+  .port img,.dragport img{height:46px}
+  #tray{gap:8px 10px}
+}
+</style>
+</head>
+<body>
+<div id="rail"><div id="railfill"></div></div>
+<div class="wrap">
+
+<!-- ================================ INTRO ================================ -->
+<section class="panel on" id="p-intro">
+  <figure class="hero">
+    <img src="conference_center.jpg" alt="The interior of the Conference Center in Salt Lake City, looking toward the pulpit and the choir seats.">
+    <figcaption>The Conference Center in Salt Lake City, where General Conference is held and every talk in this study was given. <b>Photo by Ricardo630, CC BY-SA 2.5, via Wikimedia Commons.</b></figcaption>
+  </figure>
+  <div class="col">
+    <p class="eyebrow">The Church of Jesus Christ of Latter-day Saints · a measurement experiment</p>
+    <h1>Who speaks more like a conservative?</h1>
+    <p class="lede">Twice a year the fifteen men who lead The Church of Jesus Christ of Latter-day Saints — the First Presidency and the Quorum of the Twelve Apostles — preach at General Conference. Some of them sound more like a conservative politician; some sound more like a liberal one. A classifier that has read millions of words of partisan political speech can tell you which is which.</p>
+    <p>Before you see its answer, give yours. Drag each portrait onto the scale — right for the men you think sound more like a conservative, left for the men you think sound more like a liberal. Nothing is revealed until all fifteen are down.</p>
+    <div class="note">
+      <strong>The question is about how they talk, and the scale answers it well.</strong> The classifier learns which words separate Republican from Democratic political speech, then asks how closely each man’s conference vocabulary matches each side. Sounding like a conservative is a real, checkable fact about a body of text, and this is a tool built to measure exactly that. What it cannot do is read a mind. It reports vocabulary, not anyone’s beliefs, votes or party — and it reports it with more confidence for the men who have preached more: the counts behind these fifteen run from 2 talks to 108.
+    </div>
+    <p class="fine">About three minutes. Placements are recorded anonymously and used to study how closely people’s expectations track what the words actually say.</p>
+    <div class="row"><button class="btn" id="go-intake">Begin</button></div>
+  </div>
+</section>
+
+<!-- ================================ INTAKE ================================ -->
+<section class="panel" id="p-intake">
+  <div class="col">
+    <p class="eyebrow">First, three quick questions</p>
+    <h2>So the answers can be read in context</h2>
+    <p class="fine">Every question can be skipped. None of them identify you.</p>
+
+    <div class="q" data-q="lds">
+      <p class="qtext">Are you, or have you ever been, a member of The Church of Jesus Christ of Latter-day Saints?</p>
+      <div class="opts">
+        <button class="opt" data-v="current">Yes, currently</button>
+        <button class="opt" data-v="former">Formerly</button>
+        <button class="opt" data-v="never">Never</button>
+        <button class="opt" data-v="skip">Prefer not to say</button>
+      </div>
+    </div>
+    <div class="q" data-q="follow">
+      <p class="qtext">How closely do you follow General Conference?</p>
+      <div class="opts">
+        <button class="opt" data-v="most">I watch or read most sessions</button>
+        <button class="opt" data-v="some">Some of it</button>
+        <button class="opt" data-v="rare">Rarely</button>
+        <button class="opt" data-v="never">Never</button>
+      </div>
+    </div>
+    <div class="q" data-q="pid">
+      <p class="qtext">And your own politics?</p>
+      <div class="scale7">
+        <button class="opt" data-v="1">Very liberal</button>
+        <button class="opt" data-v="2">Liberal</button>
+        <button class="opt" data-v="3">Lean lib.</button>
+        <button class="opt" data-v="4">Middle</button>
+        <button class="opt" data-v="5">Lean cons.</button>
+        <button class="opt" data-v="6">Conservative</button>
+        <button class="opt" data-v="7">Very cons.</button>
+      </div>
+      <div class="opts" style="margin-top:8px"><button class="opt" data-v="skip">Prefer not to say</button></div>
+    </div>
+
+    <div class="row">
+      <button class="btn" id="go-place">Continue</button>
+      <button class="btn outline small" id="skip-all">I don't know them well enough — just show me the results</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== PLACEMENT ============================== -->
+<section class="panel" id="p-place">
+  <div class="col">
+    <p class="eyebrow">Your turn</p>
+    <h2>Place all fifteen apostles</h2>
+    <p class="fine">The further right you put a man, the more you think he sounds like a conservative; the further left, the more he sounds like a liberal. Drag a portrait onto the line, or tap one to drop it at the centre and nudge it with the <span class="mono">&larr;</span> <span class="mono">&rarr;</span> keys. Move them as often as you like until you lock in.</p>
+    <p class="fine">The scale carries no numbers — those are the answer. What it does carry is a yardstick: two real politicians, for comparison.</p>
+
+    <div class="yardstick">
+      <h3>How does a real politician sound?</h3>
+      <p>Politicians have given campus addresses at BYU, BYU&#8209;Hawaii and Ensign College. Those speeches went through the very same classifier as the conference talks, which puts a real Democrat and a real Republican on this very same line — speaking in this very same setting.</p>
+      <ul class="ylist">
+        <li><span class="ydash dem"></span><span><strong>The blue line is how a Democrat sounds</strong> at a BYU pulpit — the median of <span class="mono" id="nd">5</span> such speeches.</span></li>
+        <li><span class="ydash rep"></span><span><strong>The red line is how a Republican sounds</strong> in the same place — the median of <span class="mono" id="nr">9</span>.</span></li>
+      </ul>
+      <p>So dropping a man <em>right of the red line</em> says he sounds more like a conservative than an actual Republican politician does. <em>Left of the blue line</em> says he sounds more like a liberal than an actual Democrat does. Between the two lines says he sounds like something in between.</p>
+      <p class="fine">Two warnings. Do not assume the fifteen fall between the lines — they may all sit to one side. And sounding like a party is not belonging to one: nobody’s politics is being reported here, only how their words score.</p>
+    </div>
+  </div>
+  <div class="scroller"><div id="stagebox"><div id="stage"><svg id="lines"></svg>
+    <div class="stagehint" id="stagehint">Drop the portraits onto the line</div>
+  </div></div></div>
+  <div id="tray"></div>
+  <p class="counter"><b id="cnt">0</b> of 15 placed</p>
+  <div class="col">
+    <div class="row">
+      <button class="btn" id="go-reveal" disabled>Lock in and reveal</button>
+      <button class="btn outline small" id="skip-place">Skip — just show me the results</button>
+    </div>
+  </div>
+</section>
+
+<!-- =============================== REVEAL =============================== -->
+<section class="panel" id="p-reveal">
+  <div class="col">
+    <p class="eyebrow">The measure</p>
+    <h2 id="revealhead">Here is who sounds like what</h2>
+    <p class="fine" id="revealsub"></p>
+  </div>
+  <div class="scroller"><div id="revealbox"></div></div>
+  <div class="legend" id="legend"></div>
+  <p class="credit">Portraits from Wikimedia Commons — full credits at the foot of the page.</p>
+
+  <div class="col">
+    <div class="score" id="scorecard"></div>
+
+    <hr class="sep">
+    <h3>How sharp is the ranking?</h3>
+    <p>The scale is good at the ends and blunt in the middle. It can tell you with real confidence who sounds most like a liberal and who sounds most like a conservative; it cannot tell you who is seventh and who is eighth.</p>
+    <p id="overlaptext"></p>
+    <p>Precision follows the amount of preaching. Elder Gilbert is placed on two talks and President Eyring on 108, so the same dot carries very different weight along the row. Read the ends of the scale as the firm part, and the middle as a cluster rather than a queue.</p>
+
+    <h3 style="margin-top:2.2rem">How conservative is conservative?</h3>
+    <p id="anchortext"></p>
+    <p>That is what makes the two lines worth having: they turn the scale from a ranking into a yardstick. A man to the right of the red line used language this classifier scores as sounding more conservative than an actual Republican politician sounded — at the same pulpit, to the same kind of audience. Holding that much of the setting constant is exactly why it is the right comparison: the distance is not simply religious vocabulary reading as conservative.</p>
+    <p>What the lines do not say is where anyone stands. The blue line is not where Democrats sit in American politics; it is where a Democratic politician’s <em>words</em> landed on this ruler on one particular stage. Sounding like a party is not belonging to one.</p>
+    <p class="fine">Both benchmarks rest on small numbers, and the Democratic five contain both the most and the least conservative-scoring speeches in the whole politician set — which is why the lines are medians rather than means, and why they mark a rough region rather than a sharp threshold.</p>
+
+    <h3 style="margin-top:2.2rem">What zero means</h3>
+    <p>Zero is how the average general authority has sounded since 1984 — the year the longest-serving of these fifteen began speaking as an apostle. A man at zero sounds like the middle of his own cohort. The scale is in standard deviations of a single talk, so a man at +0.4 sounds about four-tenths of a talk’s worth of variation more conservative than that middle.</p>
+    <p class="fine">The cohort starts in 1984 rather than 1933 for a reason: a modern classifier reads old text as conservative through archaism rather than politics, so a pooled zero sits well above the modern mean and would push all fifteen left of it by construction.</p>
+
+    <div class="row">
+      <button class="btn outline" id="again">Start over</button>
+    </div>
+    <p class="saved" id="saved"></p>
+
+    <div class="credits">
+      <h3>Image credits</h3>
+      <p id="imagecredits">Conference Center photograph by Ricardo630, CC BY-SA 2.5, via <a href="https://commons.wikimedia.org/wiki/File:LDS_Conference_Center_interior_panoramic.jpg">Wikimedia Commons</a>. Portraits, all via Wikimedia Commons: <a href="https://commons.wikimedia.org/wiki/File:Elder_Neil_L._Andersen_(41220662734).jpg">Andersen</a> (Ben P L from Provo, CC BY-SA 2.0); <a href="https://commons.wikimedia.org/wiki/File:Elder_David_A._Bednar.png">Bednar</a> (Leslie Nilsson, CC BY-SA 4.0); <a href="https://commons.wikimedia.org/wiki/File:G%C3%A9rald_Causs%C3%A9.jpg">Causse</a> (Leslie Nilsson, CC BY-SA 4.0); <a href="https://commons.wikimedia.org/wiki/File:D._Todd_Christofferson_(26735635918).jpg">Christofferson</a> (Ben P L, CC BY-SA 2.0); <a href="https://commons.wikimedia.org/wiki/File:Elder_Quentin_L._Cook.png">Cook</a> (Leslie Nilsson, CC BY-SA 4.0); <a href="https://commons.wikimedia.org/wiki/File:Elder_Henry_B._Eyring.jpg">Eyring</a> (Leslie Nilsson, CC BY-SA 4.0); <a href="https://commons.wikimedia.org/wiki/File:Clark_G._Gilbert.jpg">Gilbert</a> (Johnw2, CC BY-SA 4.0); <a href="https://commons.wikimedia.org/wiki/File:Gerrit_gong_official_portrait.jpg">Gong</a> (Mems47, CC BY-SA 4.0); <a href="https://commons.wikimedia.org/wiki/File:Elder_Patrick_Kearon.jpg">Kearon</a> (Leslie Nilsson, CC BY-SA 4.0); <a href="https://commons.wikimedia.org/wiki/File:Dallin_Harris_Oaks_(cropped3x4).jpg">Oaks</a> (Scott G. Winterton for Deseret News, CC BY-SA 4.0); <a href="https://commons.wikimedia.org/wiki/File:Elder_Ronald_A._Rasband.jpg">Rasband</a> (Leslie Nilsson, CC BY-SA 4.0); <a href="https://commons.wikimedia.org/wiki/File:Elder_Dale_G._Renlund.jpg">Renlund</a> (Leslie Nilsson, CC BY-SA 4.0); <a href="https://commons.wikimedia.org/wiki/File:Elder_Ulisses_Soares_(46802114135).jpg">Soares</a> (Ben P L from Provo, USA, CC BY-SA 2.0); <a href="https://commons.wikimedia.org/wiki/File:Elder_Gary_E._Stevenson.jpg">Stevenson</a> (Leslie Nilsson, CC BY-SA 4.0); <a href="https://commons.wikimedia.org/wiki/File:Dieter_F._Uchtdorf3.jpg">Uchtdorf</a> (--ARTEST4ECHO, Public domain). Licence terms: <a href="https://creativecommons.org/licenses/by-sa/2.0">CC BY-SA 2.0</a>, <a href="https://creativecommons.org/licenses/by-sa/2.5">CC BY-SA 2.5</a>, <a href="https://creativecommons.org/licenses/by-sa/4.0">CC BY-SA 4.0</a>.</p>
+    </div>
+  </div>
+</section>
+</div>
+
+<script>
+"use strict";
+
+/* ------------------------------------------------------------------- data */
+const DATA = {"meta":{"built":"2026-09-25","seed":20260925,"n":15,"figure":"fig27_apostle_ideology_scale.pdf","script":"Code/104_elicitation_data.R  <- Code/52b_apostle_scale.R","units":"SD units of general-authority talks, 1984 on","ref_year":1984,"pairs":105,"overlap":72,"n_right_of_R":9,"n_right_of_D":15},"anchors":[{"party":"Democrat","n":5,"median":-1.495,"mean":-1.436},{"party":"Republican","n":9,"median":-0.2809,"mean":-0.6074}],"leaders":[{"slug":"gerrit-w-gong","name":"Gerrit W. Gong","short":"Gong","office":"Quorum of the Twelve","talks":19,"z":-0.915,"se":0.2164,"rank":1,"xrow":-1.5622},{"slug":"patrick-kearon","name":"Patrick Kearon","short":"Kearon","office":"Quorum of the Twelve","talks":8,"z":-0.9056,"se":0.3131,"rank":2,"xrow":-1.4127},{"slug":"gary-e-stevenson","name":"Gary E. Stevenson","short":"Stevenson","office":"Quorum of the Twelve","talks":25,"z":-0.5499,"se":0.1747,"rank":3,"xrow":-1.2631},{"slug":"clark-g-gilbert","name":"Clark G. Gilbert","short":"Gilbert","office":"Quorum of the Twelve","talks":2,"z":-0.5147,"se":0.1301,"rank":4,"xrow":-1.1136},{"slug":"ronald-a-rasband","name":"Ronald A. Rasband","short":"Rasband","office":"Quorum of the Twelve","talks":28,"z":-0.5044,"se":0.1903,"rank":5,"xrow":-0.9641},{"slug":"quentin-l-cook","name":"Quentin L. Cook","short":"Cook","office":"Quorum of the Twelve","talks":40,"z":-0.2968,"se":0.164,"rank":6,"xrow":-0.8145},{"slug":"dieter-f-uchtdorf","name":"Dieter F. Uchtdorf","short":"Uchtdorf","office":"Quorum of the Twelve","talks":74,"z":-0.2056,"se":0.1114,"rank":7,"xrow":-0.665},{"slug":"dale-g-renlund","name":"Dale G. Renlund","short":"Renlund","office":"Quorum of the Twelve","talks":24,"z":-0.1211,"se":0.1962,"rank":8,"xrow":-0.5155},{"slug":"gerald-j-causse","name":"Gerald Causse","short":"Causse","office":"Quorum of the Twelve","talks":9,"z":-0.0812,"se":0.3127,"rank":9,"xrow":-0.366},{"slug":"henry-b-eyring","name":"Henry B. Eyring","short":"Eyring","office":"First Presidency","talks":108,"z":0.044,"se":0.0826,"rank":10,"xrow":-0.2164},{"slug":"neil-l-andersen","name":"Neil L. Andersen","short":"Andersen","office":"Quorum of the Twelve","talks":40,"z":0.0803,"se":0.1395,"rank":11,"xrow":-0.0669},{"slug":"ulisses-soares","name":"Ulisses Soares","short":"Soares","office":"Quorum of the Twelve","talks":22,"z":0.1536,"se":0.2194,"rank":12,"xrow":0.0826},{"slug":"david-a-bednar","name":"David A. Bednar","short":"Bednar","office":"Quorum of the Twelve","talks":44,"z":0.2706,"se":0.1137,"rank":13,"xrow":0.2322},{"slug":"dallin-h-oaks","name":"Dallin H. Oaks","short":"Oaks","office":"First Presidency","talks":100,"z":0.2993,"se":0.1119,"rank":14,"xrow":0.3817},{"slug":"d-todd-christofferson","name":"D. Todd Christofferson","short":"Christofferson","office":"First Presidency","talks":43,"z":0.4256,"se":0.1664,"rank":15,"xrow":0.5312}]};
+const L = DATA.leaders, N = L.length;
+const BY = Object.fromEntries(L.map(d => [d.slug, d]));
+
+/* axis domain — fig27's drawn range, rounded out */
+const DOM = [-1.78, 0.70];
+const dx  = v => (v - DOM[0]) / (DOM[1] - DOM[0]);      // value -> 0..1
+
+/* ------------------------------------------------------------------ state */
+const S = {
+  answers:{lds:null, follow:null, pid:null},
+  pos:{}, order:[], mode:null, started:Date.now(), crowd:null, revealed:false
+};
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const SVGNS = "http://www.w3.org/2000/svg";
+
+/* ------------------------------------------------------------- navigation */
+const PANELS = ["p-intro","p-intake","p-place","p-reveal"];
+function show(id){
+  PANELS.forEach(p => $("#"+p).classList.toggle("on", p===id));
+  $("#railfill").style.width = ((PANELS.indexOf(id)+1)/PANELS.length*100)+"%";
+  window.scrollTo({top:0, behavior:"instant"});
+}
+$("#go-intake").onclick = () => show("p-intake");
+$("#go-place").onclick  = () => { show("p-place"); requestAnimationFrame(render); };
+$("#skip-all").onclick  = () => { S.mode="skipped"; finish(); };
+$("#skip-place").onclick= () => { S.mode="skipped"; finish(); };
+$("#go-reveal").onclick = () => { S.mode="placed";  finish(); };
+$("#again").onclick     = () => location.reload();
+
+$$(".q").forEach(q => {
+  const key = q.dataset.q;
+  q.querySelectorAll(".opt").forEach(b => {
+    b.onclick = () => {
+      const on = b.getAttribute("aria-pressed") === "true";
+      q.querySelectorAll(".opt").forEach(o => o.setAttribute("aria-pressed","false"));
+      b.setAttribute("aria-pressed", on ? "false" : "true");
+      S.answers[key] = on ? null : b.dataset.v;
+    };
+  });
+});
+
+/* ================================================== the portraits and stage */
+const stage = $("#stage"), stagebox = $("#stagebox"), svg = $("#lines"), tray = $("#tray");
+const ports = {};
+const PAD = 46;                     // left/right inset of the axis inside the stage
+
+function portrait(d, forDrag){
+  const el = document.createElement("div");
+  el.className = "port " + (d.office === "First Presidency" ? "fp" : "q12");
+  el.innerHTML =
+    '<img alt="' + d.name + '" src="portraits/' + d.slug + '.png">' +
+    '<div class="pname">' + d.short + '</div>' +
+    '<div class="pnum"></div>';
+  if (!forDrag){
+    el.dataset.slug = d.slug;
+    el.tabIndex = 0;
+    el.setAttribute("role","slider");
+    el.setAttribute("aria-label", d.name + " — position on the scale");
+    el.setAttribute("aria-valuemin","0"); el.setAttribute("aria-valuemax","100");
+  }
+  return el;
+}
+
+// Shuffle the tray: the order it is offered in must not be the answer key.
+const trayOrder = L.map(d => d.slug);
+for (let i = trayOrder.length-1; i > 0; i--){
+  const j = Math.floor(Math.random()*(i+1));
+  [trayOrder[i], trayOrder[j]] = [trayOrder[j], trayOrder[i]];
+}
+trayOrder.forEach(s => { const el = portrait(BY[s]); ports[s] = el; tray.appendChild(el); });
+
+/* ---- geometry ---- */
+function stageW(){ return stage.clientWidth; }
+function px(x01){ const W = stageW(); return PAD + x01*(W - 2*PAD); }
+function unpx(p){ const W = stageW(); return (p - PAD)/(W - 2*PAD); }
+
+const PORT = () => (window.innerWidth <= 700 ? 46 : 60);
+const LANE = () => PORT() + 16;
+
+function render(){
+  const placed = Object.keys(S.pos);
+  $("#stagehint").style.display = (placed.length || S.revealed) ? "none" : "block";
+
+  const P = PORT(), W = stageW();
+  const items = placed.map(s => ({s, el:ports[s], x:S.pos[s]})).sort((a,b) => a.x - b.x);
+
+  // lane packing: greedy by x, first lane with room
+  const lanes = [];
+  items.forEach(it => {
+    const cx = Math.min(Math.max(px(it.x), P/2+2), W - P/2 - 2);
+    const left = cx - P/2, right = cx + P/2;
+    let k = 0;
+    while (lanes[k] !== undefined && lanes[k] > left - 8) k++;
+    lanes[k] = right;
+    it.top = 12 + k*LANE(); it.cx = cx;
+  });
+  const rows = Math.max(lanes.length, 1);
+  const axisY = 12 + rows*LANE() + 44;
+  stage.style.height = (axisY + 72) + "px";
+
+  items.forEach(it => {
+    if (it.el.parentElement !== stage){ stage.appendChild(it.el); }
+    it.el.style.left = (it.cx - P/2) + "px";
+    it.el.style.top  = it.top + "px";
+    it.el.setAttribute("aria-valuenow", Math.round(it.x*100));
+  });
+
+  drawAxis(axisY, items, P);
+  $("#cnt").textContent = placed.length;
+  $("#go-reveal").disabled = placed.length < N;
+}
+
+function el(tag, attrs, parent){
+  const e = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  (parent || svg).appendChild(e);
+  return e;
+}
+
+/* The benchmark labels carry the whole meaning of the dashed lines, so they say
+   it in words rather than in "D median". Two lines of text, shortened on a
+   narrow screen where the two labels would otherwise collide. */
+/* The two ends of the scale state the question the whole page is asking. */
+function DIR(terse){
+  return terse
+    ? ["\u2190 SOUNDS LIBERAL", "SOUNDS CONSERVATIVE \u2192"]
+    : ["\u2190 SOUNDS MORE LIKE A LIBERAL", "SOUNDS MORE LIKE A CONSERVATIVE \u2192"];
+}
+function anchorLabel(a, terse){
+  const dem = a.party === "Democrat";
+  return terse
+    ? [(dem ? "DEMOCRAT" : "REPUBLICAN"), "at BYU (n=" + a.n + ")"]
+    : [(dem ? "A TYPICAL DEMOCRATIC" : "A TYPICAL REPUBLICAN"),
+       "politician speaking at BYU (median of " + a.n + ")"];
+}
+function anchorText(x, y, a, terse, col){
+  const t = el("text", {x:x, y:y, "font-size":9.6, "font-family":"var(--mono)", fill:col});
+  const parts = anchorLabel(a, terse);
+  const s1 = el("tspan", {x:x, dy:0}, t);  s1.textContent = parts[0];
+  const s2 = el("tspan", {x:x, dy:12, "font-size":9, opacity:.9}, t); s2.textContent = parts[1];
+  return t;
+}
+
+/* The scale shown while placing. It carries no numbers -- those are the answer --
+   but it does carry the two party benchmarks, because a line with no reference
+   on it gives a respondent nothing to place against. */
+function drawAxis(axisY, items, P){
+  svg.innerHTML = "";
+  const W = stageW(), terse = W < 640;
+
+  DATA.anchors.forEach(a => {
+    const x = px(dx(a.median));
+    const col = a.party === "Democrat" ? "var(--dem)" : "var(--rep)";
+    el("line", {x1:x, x2:x, y1:6, y2:axisY + 9, stroke:col,
+                "stroke-width":1.3, "stroke-dasharray":"4 3", opacity:.85});
+    anchorText(x + 6, axisY + 42, a, terse, col);
+  });
+
+  el("line", {x1:PAD-22, x2:W-PAD+22, y1:axisY, y2:axisY,
+              stroke:"var(--rule-strong)", "stroke-width":1.6});
+  el("text", {x:PAD-22, y:axisY+24, "font-size":10.5, "font-family":"var(--mono)",
+              "letter-spacing":"1.1", fill:"var(--dem)"}).textContent = DIR(terse)[0];
+  const t = el("text", {x:W-PAD+22, y:axisY+24, "font-size":10.5, "font-family":"var(--mono)",
+              "letter-spacing":"1.1", "text-anchor":"end", fill:"var(--rep)"});
+  t.textContent = DIR(terse)[1];
+
+  items.forEach(it => {
+    el("line", {x1:it.cx, x2:it.cx, y1:it.top + P + 4, y2:axisY - 5,
+                stroke:"var(--rule-strong)", "stroke-width":1, opacity:.75});
+    el("circle", {cx:it.cx, cy:axisY, r:4,
+                  fill: BY[it.s].office === "First Presidency" ? "var(--fp)" : "var(--q12)"});
+  });
+}
+
+function place(slug, x){
+  S.pos[slug] = Math.min(Math.max(x, 0), 1);
+  if (!S.order.includes(slug)) S.order.push(slug);
+  render();
+}
+function unplace(slug){
+  delete S.pos[slug]; S.order = S.order.filter(o => o !== slug);
+  const e = ports[slug]; e.style.left = ""; e.style.top = "";
+  tray.appendChild(e); render();
+}
+
+/* ---- dragging: one path for mouse, pen and touch ---- */
+let drag = null;
+function onDown(e){
+  if (S.revealed) return;
+  const c = e.target.closest(".port");
+  if (!c) return;
+  e.preventDefault();
+  const slug = c.dataset.slug;
+  const gh = portrait(BY[slug], true);
+  gh.className = "dragport";
+  gh.style.left = e.clientX+"px"; gh.style.top = e.clientY+"px";
+  document.body.appendChild(gh);
+  c.classList.add("dragging");
+  drag = {slug, c, gh, x0:e.clientX, y0:e.clientY, moved:false};
+  try { c.setPointerCapture(e.pointerId); } catch(_){}
+}
+function overStage(e){
+  const r = stage.getBoundingClientRect();
+  return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top-30 && e.clientY <= r.bottom+30;
+}
+function onMove(e){
+  if (!drag) return;
+  if (Math.abs(e.clientX-drag.x0) > 4 || Math.abs(e.clientY-drag.y0) > 4) drag.moved = true;
+  drag.gh.style.left = e.clientX+"px"; drag.gh.style.top = e.clientY+"px";
+  stage.classList.toggle("hot", overStage(e));
+}
+function onUp(e){
+  if (!drag) return;
+  const {slug, c, gh, moved} = drag;
+  gh.remove(); c.classList.remove("dragging"); stage.classList.remove("hot"); drag = null;
+  if (!moved){ if (S.pos[slug] === undefined) place(slug, 0.5); c.focus(); return; }
+  if (overStage(e)){
+    const r = stage.getBoundingClientRect();
+    place(slug, unpx(e.clientX - r.left));
+  } else if (S.pos[slug] !== undefined) unplace(slug);
+}
+stage.addEventListener("pointerdown", onDown);
+tray.addEventListener("pointerdown", onDown);
+document.addEventListener("pointermove", onMove);
+document.addEventListener("pointerup", onUp);
+document.addEventListener("pointercancel", onUp);
+
+document.addEventListener("keydown", e => {
+  if (S.revealed) return;
+  const c = document.activeElement;
+  if (!c || !c.classList || !c.classList.contains("port")) return;
+  const slug = c.dataset.slug;
+  if (e.key === "Enter" || e.key === " "){
+    if (S.pos[slug] === undefined){ e.preventDefault(); place(slug, 0.5); c.focus(); }
+    return;
+  }
+  if (S.pos[slug] === undefined) return;
+  const step = e.shiftKey ? 0.05 : 0.01;
+  if (e.key === "ArrowLeft"){ e.preventDefault(); place(slug, S.pos[slug]-step); c.focus(); }
+  if (e.key === "ArrowRight"){ e.preventDefault(); place(slug, S.pos[slug]+step); c.focus(); }
+  if (e.key === "Backspace" || e.key === "Delete"){ e.preventDefault(); unplace(slug); }
+});
+window.addEventListener("resize", () => { S.revealed ? drawReveal() : render(); });
+
+/* ============================================================== statistics */
+function ranks(v){
+  const idx = v.map((x,i) => [x,i]).sort((a,b) => a[0]-b[0]);
+  const r = new Array(v.length);
+  let i = 0;
+  while (i < idx.length){
+    let j = i;
+    while (j+1 < idx.length && idx[j+1][0] === idx[i][0]) j++;
+    const a = (i+j)/2 + 1;
+    for (let k = i; k <= j; k++) r[idx[k][1]] = a;
+    i = j+1;
+  }
+  return r;
+}
+function pearson(a,b){
+  const n = a.length, ma = a.reduce((s,v)=>s+v,0)/n, mb = b.reduce((s,v)=>s+v,0)/n;
+  let num=0, da=0, db=0;
+  for (let i=0;i<n;i++){ const x=a[i]-ma, y=b[i]-mb; num+=x*y; da+=x*x; db+=y*y; }
+  return (da===0||db===0) ? 0 : num/Math.sqrt(da*db);
+}
+const spearman = (a,b) => pearson(ranks(a), ranks(b));
+function concordant(a,b){
+  let ok=0, tot=0;
+  for (let i=0;i<a.length-1;i++) for (let j=i+1;j<a.length;j++){
+    tot++; if ((a[i]-a[j])*(b[i]-b[j]) > 0) ok++;
+  }
+  return {ok, tot};
+}
+const CHANCE = 1.96/Math.sqrt(N-1);              // 95% band for a random ordering
+
+/* ================================================================== reveal */
+function finish(){
+  S.revealed = true;
+  show("p-reveal");
+  // move the stage into the reveal panel so the portraits animate rather than redraw
+  $("#revealbox").appendChild(stagebox);
+  stage.classList.add("revealed");
+  L.forEach(d => {
+    if (!ports[d.slug].parentElement || ports[d.slug].parentElement === tray) stage.appendChild(ports[d.slug]);
+    ports[d.slug].querySelector(".pnum").textContent =
+      (d.z >= 0 ? "+" : "−") + Math.abs(d.z).toFixed(2) + "\n(" + d.talks + " talk" + (d.talks===1?"":"s") + ")";
+    ports[d.slug].querySelector(".pnum").style.whiteSpace = "pre";
+  });
+  requestAnimationFrame(() => requestAnimationFrame(drawReveal));
+  writeScore();
+  writeText();
+  loadCrowd();
+  save();
+}
+
+function drawReveal(){
+  const P = PORT();
+  stagebox.style.minWidth = 1140 + "px";
+  const W = stagebox.clientWidth;
+  stage.style.width = W + "px";
+
+  // lanes, top to bottom: portraits -> leader lines -> the scale -> the
+  // direction words and party labels -> the respondent's own placements.
+  // Like fig27 itself, the scale carries points, not intervals.
+  const yImg   = 14,
+        yLine  = yImg + P + 36,
+        yAxis  = yLine + 92,
+        yWords = yAxis + 38,          // "sounds more like a ..." at each end
+        yDir   = yAxis + 58,          // the two party benchmark labels, two lines each
+        yGuess = yAxis + 104;
+  const byRank = L.slice().sort((a,b) => a.z - b.z);
+  $("#stagehint").style.display = "none";
+  stage.style.height = ((S.mode === "placed" ? yGuess + 32 : yAxis + 92)) + "px";
+
+  const rowX = i => PAD + 14 + (i/(N-1))*(W - 2*PAD - 28);
+  svg.innerHTML = "";
+
+  // party benchmarks, behind everything
+  DATA.anchors.forEach(a => {
+    const x = px(dx(a.median));
+    const col = a.party === "Democrat" ? "var(--dem)" : "var(--rep)";
+    el("line", {x1:x, x2:x, y1:yLine - 8, y2:yAxis + 46, stroke:col,
+                "stroke-width":1.3, "stroke-dasharray":"4 3", opacity:.9});
+    anchorText(x + 7, yDir, a, false, col);
+  });
+
+  // the scale
+  el("line", {x1:PAD-26, x2:W-PAD+26, y1:yAxis, y2:yAxis, stroke:"var(--rule-strong)", "stroke-width":1.6});
+  for (let v = -1.6; v <= 0.61; v += 0.4){
+    const x = px(dx(v));
+    el("line", {x1:x, x2:x, y1:yAxis, y2:yAxis+6, stroke:"var(--rule-strong)", "stroke-width":1});
+    const t = el("text", {x:x, y:yAxis+20, "font-size":10, "font-family":"var(--mono)",
+                          "text-anchor":"middle", fill:"var(--muted)"});
+    t.textContent = (Math.abs(v) < 1e-9 ? "0.0" : v.toFixed(1));
+  }
+  const ta = el("text", {x:PAD-26, y:yWords, "font-size":10.5, "font-family":"var(--mono)",
+                         "letter-spacing":"1.1", fill:"var(--dem)"});
+  ta.textContent = DIR(false)[0];
+  const tb = el("text", {x:W-PAD+26, y:yWords, "font-size":10.5, "font-family":"var(--mono)",
+                         "letter-spacing":"1.1", "text-anchor":"end", fill:"var(--rep)"});
+  tb.textContent = DIR(false)[1];
+
+  // small lane captions, set clear of the leftmost marks
+  const cap = (y, txt) => {
+    const t = el("text", {x:PAD-26, y:y, "font-size":8.6, "font-family":"var(--mono)",
+                          "letter-spacing":"1", fill:"var(--faint)"});
+    t.textContent = txt;
+  };
+  if (S.mode === "placed") cap(yGuess - 14, "WHERE YOU PUT THEM");
+
+  byRank.forEach((d,i) => {
+    const rx = rowX(i), tx = px(dx(d.z));
+    const col = d.office === "First Presidency" ? "var(--fp)" : "var(--q12)";
+
+    el("line", {x1:rx, x2:tx, y1:yLine, y2:yAxis-6, stroke:"var(--rule-strong)",
+                "stroke-width":.9, opacity:.8});
+    el("circle", {cx:tx, cy:yAxis, r:4.5, fill:col});
+
+    if (S.mode === "placed" && S.pos[d.slug] !== undefined){
+      const gx = px(S.pos[d.slug]);
+      el("line", {x1:gx, x2:tx, y1:yGuess, y2:yGuess, stroke:"var(--accent)", "stroke-width":1.1, opacity:.5});
+      el("line", {x1:tx, x2:tx, y1:yGuess-4, y2:yGuess+4, stroke:"var(--accent)", "stroke-width":1.3});
+      el("circle", {cx:gx, cy:yGuess, r:4, fill:"none", stroke:"var(--accent)", "stroke-width":1.7});
+    }
+    if (S.crowd && S.crowd.mean[d.slug] !== undefined){
+      const cx = px(S.crowd.mean[d.slug]);
+      el("line", {x1:cx, x2:cx, y1:yGuess-7, y2:yGuess+7, stroke:"var(--faint)", "stroke-width":1.4, opacity:.85});
+    }
+
+
+    const e = ports[d.slug];
+    e.style.left = (rx - P/2) + "px";
+    e.style.top  = yImg + "px";
+  });
+
+  const lg = $("#legend");
+  lg.innerHTML = "";
+  const bits = [
+    ['<span class="sw" style="background:var(--fp)"></span>', "First Presidency"],
+    ['<span class="sw" style="background:var(--q12)"></span>', "Quorum of the Twelve"],
+    ['<span style="color:var(--dem)" class="swline"></span><span style="color:var(--rep)" class="swline"></span>',
+     "where a typical politician of each party landed, speaking at BYU"]
+  ];
+  if (S.mode === "placed")
+    bits.push(['<span class="sw" style="background:none;border:1.7px solid var(--accent)"></span>', "where you put him"]);
+  if (S.crowd)
+    bits.push(['<span style="width:2px;height:14px;background:var(--faint);display:inline-block"></span>',
+               "average guess of " + S.crowd.n + " earlier respondents"]);
+  bits.forEach(b => { const s = document.createElement("span"); s.innerHTML = b[0]+" "+b[1]; lg.appendChild(s); });
+}
+
+function writeText(){
+  $("#overlaptext").innerHTML =
+    "Put numbers on it. Of the <span class=\"mono\">" + DATA.meta.pairs +
+    "</span> pairs of men on this scale, <strong>" + (DATA.meta.pairs - DATA.meta.overlap) +
+    "</strong> are pairs the measure separates with 95 per cent confidence. The remaining " +
+    DATA.meta.overlap + " are too close to call.";
+  const d = DATA.anchors.find(a => a.party === "Democrat");
+  const r = DATA.anchors.find(a => a.party === "Republican");
+  $("#anchortext").innerHTML =
+    "Set them beside real politicians speaking in the same place. <strong>All " +
+    DATA.meta.n_right_of_D + " of the 15</strong> sound more conservative than the typical Democrat who has addressed a BYU campus, and <strong>" +
+    DATA.meta.n_right_of_R + " of the 15</strong> sound more conservative than the typical Republican. The blue line is the median of those <span class=\"mono\">" +
+    d.n + "</span> Democratic speeches; the red line the median of the <span class=\"mono\">" + r.n + "</span> Republican ones.";
+}
+
+function writeScore(){
+  const card = $("#scorecard");
+  if (S.mode === "skipped"){
+    $("#revealsub").textContent = "Ranked from the man who sounds most like a liberal, on the left, to the man who sounds most like a conservative, on the right.";
+    card.innerHTML = '<h3>No guess on file</h3><p style="margin:0">You asked to skip straight to the answer, which is fair enough. Here is who sounds like what, with the sections below to tell you how firmly.</p>';
+    return;
+  }
+  $("#revealsub").textContent =
+    "Ranked from the man who sounds most like a liberal to the man who sounds most like a conservative. Your own placements are the rings on the lower lane.";
+
+  const mine = L.map(d => S.pos[d.slug]);
+  const meas = L.map(d => d.z);
+  const rho = spearman(mine, meas);
+  const {ok, tot} = concordant(mine, meas);
+  const rm = ranks(mine), rs = ranks(meas);
+  let hi = {d:-Infinity}, lo = {d:-Infinity};
+  L.forEach((d,i) => {
+    const e = rm[i] - rs[i];
+    if (e > hi.d) hi = {d:e, name:d.name};
+    if (-e > lo.d) lo = {d:-e, name:d.name};
+  });
+
+  let verdict;
+  if (rho >= CHANCE)      verdict = "You called it — your sense of who sounds conservative tracks the words more closely than chance would deliver.";
+  else if (rho >= 0.2)    verdict = "You leaned the right way, but not by more than luck could manage.";
+  else if (rho > -0.2)    verdict = "Your sense of who sounds conservative and the words themselves are close to unrelated.";
+  else                    verdict = "You had it backwards — the men you took for conservative are the ones who sound liberal.";
+
+  card.innerHTML =
+    '<h3>How well did you call it?</h3>' +
+    '<p class="bignum mono">' + (rho >= 0 ? "+" : "−") + Math.abs(rho).toFixed(2) + '</p>' +
+    '<p class="fine" style="margin:.5rem 0 0">Rank correlation between your ordering and the order the words actually put them in. ' + verdict + '</p>' +
+    '<div class="statgrid">' +
+      '<div class="stat"><div class="k">Pairs you called right</div><div class="v mono">'+ok+' / '+tot+'</div>' +
+        '<div class="n">Take any two of the fifteen: how often you picked the one who really does sound more conservative.</div></div>' +
+      '<div class="stat"><div class="k">Chance benchmark</div><div class="v mono">&plusmn;'+CHANCE.toFixed(2)+'</div>' +
+        '<div class="n">With fifteen names, someone guessing at random lands inside this band 95 per cent of the time.</div></div>' +
+      '<div class="stat"><div class="k">Sounds less conservative than you thought</div><div class="v" style="font-size:1.05rem;line-height:1.3">'+hi.name+'</div>' +
+        '<div class="n">Of all fifteen, he is the man you placed furthest right of where his words actually land.</div></div>' +
+      '<div class="stat"><div class="k">Sounds more conservative than you thought</div><div class="v" style="font-size:1.05rem;line-height:1.3">'+lo.name+'</div>' +
+        '<div class="n">And he is the man you placed furthest left of where his words actually land.</div></div>' +
+    '</div>';
+}
+
+/* ============================================================ persistence */
+let DB = null;
+const dbReady = (async () => { try { DB = await window.claude?.use?.("db"); } catch(_){ DB = null; } return DB; })();
+
+async function loadCrowd(){
+  const db = await dbReady; if (!db) return;
+  try {
+    const snap = await db.collection("responses").limit(400).get();
+    const sum = {}, cnt = {}; let n = 0;
+    snap.docs.forEach(doc => {
+      const r = doc.data();
+      if (!r || r.mode !== "placed" || !r.pos) return;
+      n++;
+      Object.entries(r.pos).forEach(([k,v]) => {
+        if (typeof v !== "number" || !BY[k]) return;
+        sum[k] = (sum[k]||0)+v; cnt[k] = (cnt[k]||0)+1;
+      });
+    });
+    if (n < 5) return;
+    const mean = {}; Object.keys(sum).forEach(k => mean[k] = sum[k]/cnt[k]);
+    S.crowd = {mean, n};
+    drawReveal();
+  } catch(_){ /* the crowd layer is a nicety, never a requirement */ }
+}
+
+async function save(){
+  const db = await dbReady, note = $("#saved");
+  if (!db){ return; }
+  const body = {
+    ts:new Date().toISOString(), mode:S.mode,
+    lds:S.answers.lds, follow:S.answers.follow, pid:S.answers.pid,
+    pos: S.mode === "placed" ? S.pos : null,
+    order: S.mode === "placed" ? S.order : null,
+    seconds: Math.round((Date.now()-S.started)/1000),
+    width: window.innerWidth, build: DATA.meta.built
+  };
+  if (S.mode === "placed"){
+    body.rho = +spearman(L.map(d => S.pos[d.slug]), L.map(d => d.z)).toFixed(4);
+  }
+  try { await db.collection("responses").add(body); note.textContent = "Recorded anonymously. Thank you."; }
+  catch(_){ }
+}
+
+// the two counts in the yardstick box are data, not prose
+(() => {
+  const d = DATA.anchors.find(a => a.party === "Democrat");
+  const r = DATA.anchors.find(a => a.party === "Republican");
+  if (d) $("#nd").textContent = d.n;
+  if (r) $("#nr").textContent = r.n;
+})();
+
+render();
+</script>
+</body>
+</html>
