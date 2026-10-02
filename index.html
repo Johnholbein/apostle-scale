@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Who Speaks Like a Conservative</title>
+<title>The LDS Apostle Political Ideology Scale</title>
 
 <!-- Link preview. Absolute URLs point at https://johnholbein.github.io/apostle-scale; built by Code/109_pages_bundle.R. The card itself is Code/105_social_card.R. -->
-<meta name="description" content="The fifteen apostles of The Church of Jesus Christ of Latter-day Saints, on one left-right scale. Place them yourself, then see what a classifier trained on partisan political text says.">
+<meta name="description" content="Place the fifteen apostles of The Church of Jesus Christ of Latter-day Saints on one left-right scale, then see where a classifier trained on partisan political text puts them.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Who speaks more like a conservative?">
+<meta property="og:title" content="The LDS Apostle Political Ideology Scale">
 <meta property="og:description" content="The First Presidency and Quorum of the Twelve Apostles of The Church of Jesus Christ of Latter-day Saints, on one left-right scale. Place all fifteen yourself — then see what the words say.">
 <meta property="og:image" content="https://johnholbein.github.io/apostle-scale/social_card.png">
 <meta property="og:image:width" content="2400">
 <meta property="og:image:height" content="1256">
-<meta property="og:image:alt" content="Portraits of the fifteen LDS apostles above an empty left-right scale, under the question: who speaks more like a conservative?">
+<meta property="og:image:alt" content="Portraits of the fifteen LDS apostles above an empty left-right scale, under the question: which LDS apostles speak most like conservatives?">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Who speaks more like a conservative?">
+<meta name="twitter:title" content="The LDS Apostle Political Ideology Scale">
 <meta name="twitter:description" content="The First Presidency and Quorum of the Twelve Apostles of The Church of Jesus Christ of Latter-day Saints, on one left-right scale. Place all fifteen yourself — then see what the words say.">
 <meta name="twitter:image" content="https://johnholbein.github.io/apostle-scale/social_card.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -201,7 +201,7 @@ hr.sep{border:0; border-top:1px solid var(--rule); margin:3rem 0}
   </figure>
   <div class="col">
     <p class="eyebrow">The Church of Jesus Christ of Latter-day Saints · a measurement experiment</p>
-    <h1>Who speaks more like a conservative?</h1>
+    <h1>Which LDS apostles speak most like conservatives?</h1>
     <p class="lede">Twice a year the fifteen men who lead The Church of Jesus Christ of Latter-day Saints — the First Presidency and the Quorum of the Twelve Apostles — preach at General Conference. Some of them sound more like a conservative politician; some sound more like a liberal one. A classifier that has read millions of words of partisan political speech can tell you which is which.</p>
     <p>Before you see its answer, give yours. Drag each portrait onto the scale — right for the men you think sound more like a conservative, left for the men you think sound more like a liberal. Nothing is revealed until all fifteen are down.</p>
     <div class="note">
@@ -788,9 +788,41 @@ function writeScore(){
     '</div>';
 }
 
-/* ============================================================ persistence */
+/* ============================================================ persistence
+   Two possible homes, decided at run time and never announced to the
+   respondent either way:
+
+   COLLECT_URL        a Google Apps Script endpoint writing to a Sheet. The live
+                      route when this is served from johnholbein.github.io.
+                      Apps Script cannot answer a CORS preflight, so the POST
+                      sends a plain string body and sets NO headers -- that is
+                      what keeps it a "simple" request. Adding a Content-Type
+                      header breaks it, and breaks it before the request is ever
+                      sent, which is a miserable thing to debug.
+
+   claude.use("db")   the artifact database, when this same file is opened as a
+                      private artifact on claude.ai. Inert off it.
+
+   If neither is available the instrument still works end to end; it just keeps
+   nothing. A visitor is never shown a failure they cannot act on.
+   ========================================================================= */
+const COLLECT_URL = "https://script.google.com/macros/s/AKfycbyuLixpIjR7eQh6gvRjZbDfA5MZT56yZ2_7k41wzeOxdn83k-zPdahXKu0uJR6kALQI/exec";
+const COLLECTING  = /^https:\/\//.test(COLLECT_URL);
+
 let DB = null;
 const dbReady = (async () => { try { DB = await window.claude?.use?.("db"); } catch(_){ DB = null; } return DB; })();
+
+function rid(){
+  try {
+    let v = localStorage.getItem("asc_rid");
+    if (!v){
+      v = (crypto.randomUUID ? crypto.randomUUID()
+                             : String(Math.random()).slice(2) + Date.now());
+      localStorage.setItem("asc_rid", v);
+    }
+    return v;
+  } catch(_){ return String(Math.random()).slice(2) + Date.now(); }
+}
 
 async function loadCrowd(){
   const db = await dbReady; if (!db) return;
@@ -813,23 +845,49 @@ async function loadCrowd(){
   } catch(_){ /* the crowd layer is a nicety, never a requirement */ }
 }
 
-async function save(){
-  const db = await dbReady, note = $("#saved");
-  if (!db){ return; }
-  const body = {
-    ts:new Date().toISOString(), mode:S.mode,
-    lds:S.answers.lds, follow:S.answers.follow, pid:S.answers.pid,
-    pos: S.mode === "placed" ? S.pos : null,
+function payload(){
+  const b = {
+    rid: rid(), ts: new Date().toISOString(), mode: S.mode,
+    lds: S.answers.lds, follow: S.answers.follow, pid: S.answers.pid,
+    pos:   S.mode === "placed" ? S.pos   : null,
     order: S.mode === "placed" ? S.order : null,
-    seconds: Math.round((Date.now()-S.started)/1000),
-    width: window.innerWidth, build: DATA.meta.built
+    seconds: Math.round((Date.now() - S.started) / 1000),
+    width: window.innerWidth, build: DATA.meta.built,
+    referrer: (document.referrer || "").slice(0, 120)
   };
   if (S.mode === "placed"){
-    body.rho = +spearman(L.map(d => S.pos[d.slug]), L.map(d => d.z)).toFixed(4);
+    const mine = L.map(d => S.pos[d.slug]), meas = L.map(d => d.z);
+    b.rho = +spearman(mine, meas).toFixed(4);
+    b.pairs_ok = concordant(mine, meas).ok;
   }
-  try { await db.collection("responses").add(body); note.textContent = "Recorded anonymously. Thank you."; }
-  catch(_){ }
+  return b;
 }
+
+async function save(){
+  const note = $("#saved"), body = payload();
+  let kept = false;
+
+  if (COLLECTING){
+    try {
+      await fetch(COLLECT_URL, { method: "POST", body: JSON.stringify(body) });
+      kept = true;
+    } catch(_){
+      try {
+        await fetch(COLLECT_URL, { method: "POST", mode: "no-cors",
+                                   body: JSON.stringify(body) });
+        kept = true;
+      } catch(__){ kept = false; }
+    }
+  }
+
+  if (!kept){
+    const db = await dbReady;
+    if (db){ try { await db.collection("responses").add(body); kept = true; } catch(_){} }
+  }
+
+  note.textContent = kept ? "Recorded anonymously. Thank you." : "";
+}
+
 
 // the two counts in the yardstick box are data, not prose
 (() => {
